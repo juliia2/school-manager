@@ -13,18 +13,18 @@ type ClassData = {
   name: string;
   courseCode: string;
   room: string;
-}
+};
 
 type ClassCardProps = {
   classData: ClassData;
   onSave: (index: number, classDetails: ClassData) => void;
   index: number;
-  isEditing: boolean; // Add this property
+  isEditing: boolean;
   isCardEditing: boolean;
   onEdit: () => void;
   onCancelEdit: () => void;
   onClear: (index: number) => void;
-}
+};
 
 const ClassCard: React.FC<ClassCardProps> = ({
   classData,
@@ -38,32 +38,21 @@ const ClassCard: React.FC<ClassCardProps> = ({
 }) => {
   //const [classDetails, setClassDetails] = useState(classData);
   const [tempClassData, setTempClassData] = useState<ClassData>({
-    courseCode: '',
-    name: '',
-    room: ''
-  }); // Temporary state for edits
+    // using this so it doesn't change the original data when editing (before confirming edits)
+    courseCode: "",
+    name: "",
+    room: "",
+  });
 
   useEffect(() => {
-    setTempClassData(classData); // Reset temp state when classData changes
+    setTempClassData(classData); // reset temp state when classData changes
   }, [classData]);
-
-//   useEffect(() => {
-//     setTempClassData(classData); // Reset temp state when classData changes
-//   }, [classData]);
 
   const handleInputChange = (field: keyof ClassData, value: string) => {
     setTempClassData((prevState) => ({
       ...prevState,
       [field]: value,
     }));
-  };
-  // Ensure at least one field is filled (not just spaces)
-  const isValidClass = (data: ClassData) => {
-    return (
-      data.name.trim() !== "" ||
-      data.courseCode.trim() !== "" ||
-      data.room.trim() !== ""
-    );
   };
 
   const handleSave = () => {
@@ -72,20 +61,17 @@ const ClassCard: React.FC<ClassCardProps> = ({
     tempClassData.courseCode = tempClassData.courseCode.trim();
     tempClassData.room = tempClassData.room.trim();
 
-    // if (!isValidClass(tempClassData)) {
-    //   Alert.alert("Invalid Input", "Please fill out at least one field.");
-    //   return;
-    // }
-    onSave(index, tempClassData); // Save the changes
+    onSave(index, tempClassData); // save the edited data
   };
 
   const handleCancelEdit = () => {
-    setTempClassData(classData); // Reset to original data
-    // Exit edit mode
+    setTempClassData(classData); // reset to original data (cancel edit, dont use temp data)
+    // then exit edit mode
     onCancelEdit();
   };
 
   const handleClear = () => {
+    // double check with user before clearing
     Alert.alert(
       "Clear Class Info",
       "Are you sure you want to clear this class?",
@@ -101,7 +87,8 @@ const ClassCard: React.FC<ClassCardProps> = ({
 
   return (
     <View style={[styles.card, isEmpty && styles.emptyCard]}>
-      {isEditing && isCardEditing ? (
+      {/* if a card is empty, it's greyed out */}
+      {isEditing && isCardEditing ? ( // logic for editing a card
         <View>
           <TextInput
             style={styles.input}
@@ -123,42 +110,77 @@ const ClassCard: React.FC<ClassCardProps> = ({
           />
         </View>
       ) : (
-        // Display classes if not editing - but only if they exist
+        // display classes if not editing
         <View>
-          <Text style={styles.periodHeaderText}>Period {index + 1}</Text>
-          <Text>{isEmpty ? "Empty Period" : tempClassData.name}</Text>
+          <Text
+            style={[
+              styles.periodHeaderText,
+              isEmpty && styles.emptyPeriodHeaderText,
+            ]}
+          >
+            Period {index + 1}
+          </Text>
+          {/* logic for showing card info */}
+          <Text style={isEmpty ? styles.emptyClassText : null}>
+            {isEmpty ? "Spare Period" : tempClassData.name}
+          </Text>
           <Text>{isEmpty ? "" : tempClassData.courseCode}</Text>
           <Text>{isEmpty ? "" : tempClassData.room}</Text>
         </View>
       )}
-      {/* Edit and Save buttons */}
+
+      {/* buttons */}
+
+      {/* edit button */}
       {isEditing && !isCardEditing && (
-        <Pressable onPress={onEdit} style={styles.editButton}>
+        <Pressable
+          onPress={onEdit}
+          style={({ pressed }) => [
+            styles.editButton,
+            pressed ? styles.buttonPressed : null,
+          ]}
+        >
           <Text style={styles.darkButtonText}>Edit</Text>
         </Pressable>
       )}
-
+      {/* save, cancel, clear buttons */}
       {isEditing &&
-        isCardEditing && ( // check later if this logic makes sense && vs ?
+        isCardEditing && ( // only show these buttons when editing a card
           <>
             <View style={styles.buttonContainer}>
-              {/* Save a card edit */}
-              <Pressable onPress={handleSave} style={styles.saveButton}>
+              {/* save edit */}
+              <Pressable
+                onPress={handleSave}
+                style={({ pressed }) => [
+                  styles.saveButton,
+                  pressed ? styles.buttonPressed : null,
+                ]}
+              >
                 <Text style={styles.darkButtonText}>Save</Text>
               </Pressable>
 
-              {/* Cancelling a card edit */}
-              <Pressable onPress={handleCancelEdit} style={styles.cancelButton}>
+              {/* cancel edit */}
+              <Pressable
+                onPress={handleCancelEdit}
+                style={({ pressed }) => [
+                  styles.cancelButton,
+                  pressed ? styles.buttonPressed : null,
+                ]}
+              >
                 <Text style={styles.darkButtonText}>Cancel</Text>
               </Pressable>
-            </View>
-            {/* Delete button */}
-            <Pressable onPress={handleClear} style={styles.deleteButton}>
-              <DeleteIcon />
-              {/* rerender classes */}
 
-              {/* <Text>Delete</Text> */}
-            </Pressable>
+              {/* clear button */}
+              <Pressable
+                onPress={handleClear}
+                style={({ pressed }) => [
+                  styles.deleteButton,
+                  pressed ? styles.buttonPressed : null,
+                ]}
+              >
+                <DeleteIcon />
+              </Pressable>
+            </View>
           </>
         )}
     </View>
@@ -173,21 +195,25 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   emptyCard: {
-    backgroundColor: "#d3d3d3", // Gray background for empty periods
+    //opacity: 0.75,
+    backgroundColor: "#d3d3d3", 
   },
 
-  input: {
-    borderWidth: 1,
-    padding: 8,
-    marginBottom: 10,
-  },
   periodHeaderText: {
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 5,
   },
+  emptyPeriodHeaderText: {
+    color: "#575757",
+  },
+  emptyClassText: {
+    color: "#575757",
+  },
+
   darkButtonText: {
     color: "white",
+    fontWeight: "500",
   },
   editButton: {
     backgroundColor: "#3e479e", // dark color //"#4CAF50",
@@ -203,7 +229,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     alignItems: "center",
     marginTop: 10,
-    width: "48%",
+    width: "40%",
   },
   cancelButton: {
     backgroundColor: "#3e479e", //"#4CAF50",
@@ -211,7 +237,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     alignItems: "center",
     marginTop: 10,
-    width: "48%",
+    width: "40%",
   },
   deleteButton: {
     backgroundColor: "#FF6347",
@@ -219,12 +245,21 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     alignItems: "center",
     marginTop: 10,
-    width: "100%",
+    width: "auto",
+  },
+  buttonPressed: {
+    opacity: 0.5,
   },
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 10,
+  },
+
+  input: {
+    borderWidth: 1,
+    padding: 8,
+    marginBottom: 10,
   },
 });
 
