@@ -64,14 +64,15 @@ const ClassScheduler: React.FC = () => {
     //setDayName("Wednesday"); // manual for testing ******
     //console.log(formattedDate);
 
-    //const isOdd = true; // manual for testing
+    //const isOdd = !true; // manual for testing
     const isOdd = today.getDate() % 2 !== 0;
-    const todayOrder = isOdd ? day1Order : day2Order;
+    const order = isOdd ? day1Order : day2Order;
+
+    setTodayOrder(order); // set the order of classes outside of useEffect
 
     setDayNum(isOdd ? 1 : 2); // set day number based on odd/even date
-
     // reorder classes based on the selected order (day 1, day 2)
-    setTodayClasses(todayOrder.map((index) => classes[index]));
+    setTodayClasses(order.map((index) => classes[index]));
   }, [classes]); // re-run when classes change
 
   const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -80,11 +81,20 @@ const ClassScheduler: React.FC = () => {
   const [dayNum, setDayNum] = useState<number>(0);
   const [dayName, setDayName] = useState<string>("");
   const isWeekend = dayName === "Saturday" || dayName === "Sunday";
+  const [todayOrder, setTodayOrder] = useState<number[]>(day1Order);
 
   const handleSave = (index: number, updatedClass: ClassData) => {
+    // ************
+    //const actualIndex = todayOrder[index];
+    //const actualIndex = todayOrder[index];
+    console.log(" index", index, " | Index", index);
+    console.log("Saving class", index, updatedClass);
     const updatedClasses = [...classes];
     updatedClasses[index] = updatedClass;
     setClasses(updatedClasses);
+    console.log("Classes updated", updatedClasses);
+    console.log("classes: ", classes);
+    console.log("TODAY ORDER: ", todayOrder);
     setEditingIndex(null); // stop editing after saving
   };
 
@@ -102,15 +112,46 @@ const ClassScheduler: React.FC = () => {
         try {
           // save the current classes to AsyncStorage when stopping edit mode
           await AsyncStorage.setItem("classes", JSON.stringify(classes));
+          console.log(classes);
           console.log("Classes saved with AsyncStorage");
         } catch (error) {
           console.error("Error saving data", error);
         }
 
-        setIsEditing(!isEditing);
         setEditingIndex(null);
+        setIsEditing(!isEditing);
       }
+      console.log(isEditing);
+      console.log(isEditing);
     }
+  };
+
+  const handleClearAll = async () => {
+    // clear all classes
+    Alert.alert("Are you sure you want to reset all classes?", "", [
+      { text: "No", onPress: () => console.log("No Pressed") },
+      {
+        text: "Yes",
+        onPress: async () => {
+          setClasses([
+            { name: "", courseCode: "", room: "" },
+            { name: "", courseCode: "", room: "" },
+            { name: "", courseCode: "", room: "" },
+            { name: "", courseCode: "", room: "" },
+          ]);
+
+          setEditingIndex(null); // stop editing any index after clearing
+          console.log("All classes reset");
+
+          try {
+            await AsyncStorage.removeItem("classes");
+            console.log("Classes removed from AsyncStorage");
+          } catch (error) {
+            console.error("Error removing data", error);
+          }
+        },
+      },
+    ]);
   };
 
   // clear a class - clear all fields
@@ -143,29 +184,43 @@ const ClassScheduler: React.FC = () => {
         )}
       </View>
       <ScrollView contentContainerStyle={styles.scrollView}>
-        {isWeekend && !isEditing ? ( // if it is the weekend, show this text - only on non-editing mode
-          <>
-            <Text style={styles.text}>It's the weekend! No classes today.</Text>
-            <Text style={styles.text2}>
-              Press Edit Schedule to view or edit your classes.
-            </Text>
-          </>
-        ) : (
-          // if it's not the weekend, show the classes
-          todayClasses.map((classData, index) => (
-            <ClassCard
-              key={index}
-              index={index}
-              classData={classData || { name: "", courseCode: "", room: "" }} // just in case
-              onSave={handleSave}
-              isEditing={isEditing}
-              isCardEditing={isEditing && editingIndex === index} // Only editable when selected
-              onEdit={() => handleEditCard(index)}
-              onCancelEdit={() => setEditingIndex(null)}
-              onClear={() => handleClearClass(index)}
-            />
-          ))
-        )}
+        {isWeekend &&
+          !isEditing && ( // if it is the weekend, show this text - only on non-editing mode
+            <>
+              <Text style={styles.text}>
+                It's the weekend! No classes today.
+              </Text>
+              <Text style={styles.text2}>
+                Press Edit Schedule to view or edit your classes.
+              </Text>
+            </>
+          )}
+        {/* // : ( */}
+        {/* // if it's not the weekend, show the classes */}
+
+        {(!isEditing ? todayClasses : classes).map((classData, index) => (
+          <ClassCard
+            key={index}
+            index={index}
+            // index 1 = a, 2 = b, 3 = c, 4 = d, this is block's letter
+            block={
+              todayOrder[index] === 0
+                ? "A"
+                : todayOrder[index] === 1
+                ? "B"
+                : todayOrder[index] === 2
+                ? "C"
+                : "D"
+            } // block letter
+            classData={classData || { name: "", courseCode: "", room: "" }} // just in case
+            onSave={handleSave}
+            isEditing={isEditing}
+            isCardEditing={isEditing && editingIndex === index} // Only editable when selected
+            onEdit={() => handleEditCard(index)}
+            onCancelEdit={() => setEditingIndex(null)}
+            onClear={() => handleClearClass(index)}
+          />
+        ))}
 
         {/* show stop editing vs edit schedule depending on which mode it's in */}
         <Pressable
@@ -177,6 +232,30 @@ const ClassScheduler: React.FC = () => {
         >
           <Text>{isEditing ? "Stop Editing" : "Edit Schedule"}</Text>
         </Pressable>
+
+        {isEditing && ( // only in edit mode
+        <> 
+          {/* <Pressable 
+            onPress={handleCancelEdits}
+            style={({ pressed }) => [
+              styles.resetClassesButton,
+              pressed ? styles.toggleEditButtonPressed : null,
+            ]}
+          >
+            <Text>{"Reset All Classes"}</Text>
+          </Pressable> */}
+          <Pressable // only in edit mode
+            onPress={handleClearAll}
+            style={({ pressed }) => [
+              styles.resetClassesButton,
+              pressed ? styles.toggleEditButtonPressed : null,
+            ]}
+          >
+            <Text>{"Reset All Classes"}</Text>
+          </Pressable>
+          </>
+        )}
+        
       </ScrollView>
     </View>
   );
@@ -249,6 +328,19 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   toggleEditButtonPressed: {
+    opacity: 0.5,
+    // backgroundColor:"#9595de" ,//"#a1a1a1",
+  },
+  resetClassesButton: {
+    backgroundColor: "#FF6347",
+    padding: 10,
+    marginTop: 10,
+    borderRadius: 5,
+    alignItems: "center",
+    //marginTop: 10,
+    zIndex: 10,
+  },
+  resetClassesButtonPressed: {
     opacity: 0.5,
     // backgroundColor:"#9595de" ,//"#a1a1a1",
   },

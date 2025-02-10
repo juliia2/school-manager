@@ -19,6 +19,7 @@ type ClassCardProps = {
   classData: ClassData;
   onSave: (index: number, classDetails: ClassData) => void;
   index: number;
+  block: string;
   isEditing: boolean;
   isCardEditing: boolean;
   onEdit: () => void;
@@ -35,6 +36,7 @@ const ClassCard: React.FC<ClassCardProps> = ({
   onEdit,
   onCancelEdit,
   onClear,
+  block,
 }) => {
   //const [classDetails, setClassDetails] = useState(classData);
   const [tempClassData, setTempClassData] = useState<ClassData>({
@@ -88,6 +90,16 @@ const ClassCard: React.FC<ClassCardProps> = ({
   return (
     <View style={[styles.card, isEmpty && styles.emptyCard]}>
       {/* if a card is empty, it's greyed out */}
+      <Text
+        style={[
+          styles.periodHeaderText,
+          isEmpty && styles.emptyPeriodHeaderText,
+        ]}
+      >
+        {isEditing
+          ? `Block ${String.fromCharCode(65 + index)}`
+          : `Period ${index + 1} (${block})`}
+      </Text>
       {isEditing && isCardEditing ? ( // logic for editing a card
         <View>
           <TextInput
@@ -112,15 +124,16 @@ const ClassCard: React.FC<ClassCardProps> = ({
       ) : (
         // display classes if not editing
         <View>
-          <Text
+          {/* <Text
             style={[
               styles.periodHeaderText,
               isEmpty && styles.emptyPeriodHeaderText,
             ]}
           >
             Period {index + 1}
-          </Text>
+          </Text> */}
           {/* logic for showing card info */}
+
           <Text style={isEmpty ? styles.emptyClassText : null}>
             {isEmpty ? "Spare Period" : tempClassData.name}
           </Text>
@@ -128,6 +141,16 @@ const ClassCard: React.FC<ClassCardProps> = ({
           <Text>{isEmpty ? "" : tempClassData.room}</Text>
         </View>
       )}
+
+      {/* {!isEditing && (
+        <View>
+          <Text style={isEmpty ? styles.emptyClassText : null}>
+            {isEmpty ? "Spare Period" : classData.name}
+          </Text>
+          <Text>{isEmpty ? "" : classData.courseCode}</Text>
+          <Text>{isEmpty ? "" : classData.room}</Text>{" "}
+        </View>
+      )} */}
 
       {/* buttons */}
 
@@ -196,7 +219,7 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     //opacity: 0.75,
-    backgroundColor: "#d3d3d3", 
+    backgroundColor: "#d3d3d3",
   },
 
   periodHeaderText: {
