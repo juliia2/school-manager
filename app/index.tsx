@@ -99,6 +99,11 @@ const ClassScheduler: React.FC = () => {
   };
 
   const handleEditCard = (index: number) => {
+    if (editingIndex !== null) {
+      // if already editing, alert so
+      Alert.alert("Please save or cancel the current edit");
+      return;
+    }
     setEditingIndex(index);
   };
 
